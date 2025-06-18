@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"match-sim/internal/constants"
 	"math/rand"
+	"time"
 )
 
 func (match Match) SimulateMatch(seed int64) {
@@ -27,14 +28,17 @@ func (match Match) SimulateMatch(seed int64) {
 	rules := DefaultRules()
 	fmt.Println("Loading rules", rules)
 
-	// decide sides
+	// start game
+	gameState := NewGameState()
+
+	// decide starting sides
 	attackingTeamIndex := matchRng.Intn(2)
-	attackingTeam := match.Teams[attackingTeamIndex]
-	defendingTeam := match.Teams[1-attackingTeamIndex]
+	gameState.AttackingTeam = &match.Teams[attackingTeamIndex]
+	gameState.DefendingTeam = &match.Teams[1-attackingTeamIndex]
 	// TODO: Update game state - TODO: Move to event system
 
-	fmt.Println("Attacking team", attackingTeam.ID)
-	fmt.Println("Defending team", defendingTeam.ID)
+	fmt.Println("Attacking team", gameState.AttackingTeam.ID)
+	fmt.Println("Defending team", gameState.DefendingTeam.ID)
 
 	// team 1 agent selection
 	availableAgents := constants.Agents
@@ -61,11 +65,92 @@ func (match Match) SimulateMatch(seed int64) {
 	fmt.Println("Team 2 agents", match.Teams[1].Players)
 
 	// start match
+	gameState.GameRunning = true
+	for gameState.GameRunning {
+		gameState.StartRound(rules)
 
-	// round engine
+		// Check if a team has won the match
+		if gameState.TeamOneWon || gameState.TeamTwoWon {
+			gameState.GameRunning = false
+			break
+		}
+	}
 }
 
-func filterAgents(agents []constants.Agent, role constants.AgentRole) []constants.Agent {
+// Starts a round - runs the round logic for each tick until a team wins the round
+func (gameState *GameState) StartRound(rules Rules) {
+
+	// Before starting the round, check if the half is over
+	if gameState.CurrentRound == 12 {
+		gameState.CurrentHalf = 2
+
+		// Swap the attacking and defending teams
+		attackingTeam := gameState.AttackingTeam
+		defendingTeam := gameState.DefendingTeam
+		gameState.AttackingTeam = defendingTeam
+		gameState.DefendingTeam = attackingTeam
+	}
+
+	gameState.CurrentRound++
+	const TickRate = 128
+	const TickDuration = time.Second / TickRate
+
+	// Round loop - run this logic for each round until a team reaches 13 rounds won
+	totalTicks := rules.RoundDurationSeconds * TickRate
+	for tick := 0; tick < totalTicks; tick++ {
+
+		// Reset total ticks if spike is planted
+		if gameState.SpikePlanted {
+			totalTicks = rules.RoundDurationSpikePlantedSeconds * TickRate
+		}
+
+		// Round ends if the attacking team successfully detonates the spike [attackers win]
+
+		// Round ends if the attacking team defeats all defenders [attackers win]
+
+		// Round ends if the defending team defuses the spike [defenders win]
+
+		// Round ends if the defending team defeats all attackers before the spike is planted [defenders win]
+
+		// Round ends if the time runs out before the attacking team plants the spike [defenders win]
+
+		fmt.Println("Tick", tick)
+
+		// Sleep for real time simulation
+		time.Sleep(TickDuration)
+	}
+}
+
+// List of event types that can be send to the event component, TODO: Move to event system
+const (
+	Event_SpikeDefused     = "spike_defused"
+	Event_SpikePlanted     = "spike_planted"
+	Event_SpikeDetonated   = "spike_detonated"
+	Event_RoundEnd         = "round_end"
+	Event_SetAttackingTeam = "set_attacking_team"
+	Event_SetDefendingTeam = "set_defending_team"
+)
+
+// Use this to update game state that should be recorded
+func (gameState *GameState) UpdateRecordableEvent(event string) {
+	switch event {
+	case Event_SpikeDefused:
+		fmt.Println("Spike defused")
+	case Event_SpikePlanted:
+		fmt.Println("Spike planted")
+	case Event_SpikeDetonated:
+		fmt.Println("Spike detonated")
+	case Event_RoundEnd:
+		fmt.Println("Round ended")
+	default:
+		fmt.Println("Unknown event", event)
+	}
+
+	// TODO: send update to event system
+}
+
+// Filters agents by role - useful for getting a slice of agents for a given role
+func filterAgents(agents []constants.Agent, role string) []constants.Agent {
 	filteredAgents := []constants.Agent{}
 	for _, agent := range agents {
 		if agent.Role == role {
@@ -75,6 +160,7 @@ func filterAgents(agents []constants.Agent, role constants.AgentRole) []constant
 	return filteredAgents
 }
 
+// Removes an agent from a slice of agents - useful for removing an agent from the available agents list
 func removeAgent(agents []constants.Agent, agent constants.Agent) []constants.Agent {
 	filteredAgents := []constants.Agent{}
 	for _, a := range agents {
