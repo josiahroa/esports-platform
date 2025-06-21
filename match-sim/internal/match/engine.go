@@ -54,8 +54,14 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 	slog.Info("Attacking", "team", gameState.AttackingTeam.ID)
 	slog.Info("Defending", "team", gameState.DefendingTeam.ID)
 
+	// simulate agent selection
 	match.Teams[0].AgentSelect(constants.Agents, matchRng)
 	match.Teams[1].AgentSelect(constants.Agents, matchRng)
+
+	// initialize player game state
+	// used to track the player's stats throughout a match
+	gameState.InitPlayerGameState(&match.Teams[0])
+	gameState.InitPlayerGameState(&match.Teams[1])
 
 	// start match
 	gameState.GameRunning = true
@@ -67,7 +73,7 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 			gameState.DefendingTeam = gameState.AttackingTeam
 		}
 
-		gameState.StartRound(rules, gameState.AttackingTeam, gameState.DefendingTeam, isRealTime)
+		gameState.StartRound(rules, gameState.AttackingTeam, gameState.DefendingTeam, RoundOptions{IsRealTime: true})
 		// Get round winner and loser and up their score here
 		roundWinner := gameState.CurrentRound.RoundWinner
 		if roundWinner == gameState.TeamOne {
@@ -75,6 +81,9 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 		} else if roundWinner == gameState.TeamTwo {
 			gameState.TeamTwoRoundsWon++
 		}
+
+		// Check if game goes to overtime
+		// TODO: handle overtime
 
 		// Check if a team has won the match
 		if gameState.TeamOneRoundsWon == 13 || gameState.TeamTwoRoundsWon == 13 {
@@ -85,7 +94,7 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 }
 
 // Starts a round - runs the round logic for each tick until a team wins the round
-func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendingTeam *Team, isRealTime bool) {
+func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendingTeam *Team, roundOptions RoundOptions) {
 	gameState.CurrentRound = NewRoundState(gameState.CurrentRound.RoundNumber + 1)
 	slog.Info("Starting round", "round", gameState.CurrentRound.RoundNumber)
 
@@ -97,7 +106,24 @@ func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendi
 
 	// Round loop - run this logic for each round until a team reaches 13 rounds won
 	totalTicks := rules.RoundDurationSeconds * TickRate
+
+	// Initialize player round state
+	gameState.CurrentRound.InitPlayerRoundState(attackingTeam)
+	gameState.CurrentRound.InitPlayerRoundState(defendingTeam)
+
 	for tick := 0; tick < totalTicks; tick++ {
+
+		// Kill logic
+		// if a player is alive, they have a chance of killing a player on the other team
+		// if a player gets a kill, there is a chance that their teammates can get an assist
+		// when a player gets a kill, randomly select an enemy to die
+
+		// Attacker Plant Logic
+		// after 15 seconds, there is a chance that the spike can be planted
+
+		// Defuse Logic
+		// after the spike has been planted, there is a chance that the defending team can defuse
+		// Round ends if the defending team defuses the spike [defenders win]
 
 		// Reset total ticks if spike is planted
 		if gameState.CurrentRound.SpikePlanted {
@@ -106,23 +132,17 @@ func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendi
 
 		// Round ends if the attacking team successfully detonates the spike [attackers win]
 		if gameState.CurrentRound.SpikeDetonated {
-			gameState.CurrentRound.RoundWinner = gameState.CurrentRound.AttackingTeam
-			gameState.CurrentRound.RoundLoser = gameState.CurrentRound.DefendingTeam
-			gameState.Rounds = append(gameState.Rounds, gameState.CurrentRound)
+			gameState.EndRound(gameState.CurrentRound.AttackingTeam, gameState.CurrentRound.DefendingTeam)
 			return
 		}
 
 		// Round ends if the attacking team defeats all defenders [attackers win]
 
-		// Round ends if the defending team defuses the spike [defenders win]
-
 		// Round ends if the defending team defeats all attackers before the spike is planted [defenders win]
 
 		// Round ends if the time runs out before the attacking team plants the spike [defenders win]
 		if tick == totalTicks-1 {
-			gameState.CurrentRound.RoundWinner = gameState.CurrentRound.DefendingTeam
-			gameState.CurrentRound.RoundLoser = gameState.CurrentRound.AttackingTeam
-			gameState.Rounds = append(gameState.Rounds, gameState.CurrentRound)
+			gameState.EndRound(gameState.CurrentRound.DefendingTeam, gameState.CurrentRound.AttackingTeam)
 			return
 		}
 
@@ -130,7 +150,7 @@ func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendi
 
 		// Sleep for real time simulation
 
-		if isRealTime {
+		if roundOptions.IsRealTime {
 			time.Sleep(TickDuration)
 		}
 	}
@@ -167,6 +187,31 @@ func (gameState *GameState) UpdateRecordableEvent(event string) {
 	// TODO: send update to event system
 }
 
+// Before starting a game, init the player game state
+func (gameState *GameState) InitPlayerGameState(team *Team) {
+	for i := range team.Players {
+		playerGameState := NewPlayerGameState(&team.Players[i])
+		slog.Info("Init Player Game State", "player", playerGameState.LogValue())
+		gameState.PlayerGameState = append(gameState.PlayerGameState, &playerGameState)
+	}
+}
+
+func (roundState *RoundState) InitPlayerRoundState(team *Team) {
+	for i := range team.Players {
+		playerRoundState := NewPlayerRoundState(&team.Players[i], 0)
+		slog.Info("Init Player Round State", "player", playerRoundState.LogValue())
+		roundState.PlayerRoundState = append(roundState.PlayerRoundState, &playerRoundState)
+	}
+}
+
+// Post processing logic for ending a round
+func (gameState *GameState) EndRound(winningTeam *Team, losingTeam *Team) {
+	gameState.CurrentRound.RoundWinner = winningTeam
+	gameState.CurrentRound.RoundLoser = losingTeam
+	gameState.Rounds = append(gameState.Rounds, gameState.CurrentRound)
+}
+
+// Agent selection simulation logic
 func (team Team) AgentSelect(agents map[constants.AgentName]constants.Agent, rng *rand.Rand) {
 	availableAgents := make(map[constants.AgentName]constants.Agent)
 	maps.Copy(availableAgents, agents)

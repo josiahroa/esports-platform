@@ -1,6 +1,9 @@
 package match
 
-import "match-sim/internal/constants"
+import (
+	"log/slog"
+	"match-sim/internal/constants"
+)
 
 type Player struct {
 	ID    string
@@ -30,15 +33,32 @@ type PlayerKill struct {
 	Weapon constants.Weapon
 }
 
-type PlayerState struct {
-	ID              string
-	Player          *Player
-	StartingCredits int
-	EndCredits      int
-	Kills           uint8
-	Deaths          uint8
-	Assists         uint8
-	Score           int
+type PlayerGameState struct {
+	Player  *Player
+	Kills   uint8
+	Deaths  uint8
+	Assists uint8
+	Score   int
+}
+
+func (p *PlayerGameState) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("player_id", p.Player.ID),
+		slog.Uint64("kills", uint64(p.Kills)),
+		slog.Uint64("deaths", uint64(p.Deaths)),
+		slog.Uint64("assists", uint64(p.Assists)),
+		slog.Int("score", p.Score),
+	)
+}
+
+func NewPlayerGameState(player *Player) PlayerGameState {
+	return PlayerGameState{
+		Player:  player,
+		Kills:   0,
+		Deaths:  0,
+		Assists: 0,
+		Score:   0,
+	}
 }
 
 type GameState struct {
@@ -48,6 +68,7 @@ type GameState struct {
 	DefendingTeam    *Team
 	GameRunning      bool
 	Rounds           []RoundState
+	PlayerGameState  []*PlayerGameState
 	TeamOne          *Team
 	TeamOneRoundsWon uint8
 	TeamOneScore     uint8
@@ -65,6 +86,7 @@ func NewGameState() GameState {
 		},
 		GameRunning:      false,
 		Rounds:           []RoundState{},
+		PlayerGameState:  []*PlayerGameState{},
 		TeamOne:          &Team{},
 		TeamOneRoundsWon: 0,
 		TeamOneScore:     0,
@@ -72,6 +94,27 @@ func NewGameState() GameState {
 		TeamTwoRoundsWon: 0,
 		TeamTwoScore:     0,
 	}
+}
+
+type PlayerRoundState struct {
+	Player          *Player
+	StartingCredits uint
+	EndCredits      uint
+	Alive           bool
+}
+
+func NewPlayerRoundState(player *Player, startingCredits uint) PlayerRoundState {
+	return PlayerRoundState{
+		Player:          player,
+		StartingCredits: startingCredits,
+		EndCredits:      0,
+		Alive:           true,
+	}
+}
+
+type RoundOptions struct {
+	IsRealTime bool
+	IsOvertime bool
 }
 
 type RoundState struct {
@@ -82,10 +125,19 @@ type RoundState struct {
 	RoundLoser           *Team
 	RoundNumber          uint8
 	RoundWinner          *Team
-	Players              []*PlayerState
+	PlayerRoundState     []*PlayerRoundState
 	SpikePlanted         bool
 	SpikePlantedLocation constants.PlantSite
 	SpikeDetonated       bool
+}
+
+func (p *PlayerRoundState) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("player_id", p.Player.ID),
+		slog.Uint64("starting_credits", uint64(p.StartingCredits)),
+		slog.Uint64("end_credits", uint64(p.EndCredits)),
+		slog.Bool("alive", bool(p.Alive)),
+	)
 }
 
 func NewRoundState(roundNumber uint8) RoundState {
@@ -97,7 +149,7 @@ func NewRoundState(roundNumber uint8) RoundState {
 		RoundLoser:           nil,
 		RoundNumber:          roundNumber,
 		RoundWinner:          nil,
-		Players:              []*PlayerState{},
+		PlayerRoundState:     []*PlayerRoundState{},
 		SpikePlanted:         false,
 		SpikePlantedLocation: constants.PlantSiteA,
 		SpikeDetonated:       false,
