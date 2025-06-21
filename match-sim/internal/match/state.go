@@ -35,53 +35,71 @@ type PlayerState struct {
 	Player          *Player
 	StartingCredits int
 	EndCredits      int
-	Kills           int
-	Deaths          int
-	Assists         int
+	Kills           uint8
+	Deaths          uint8
+	Assists         uint8
 	Score           int
-}
-
-type RoundState struct {
-	AttackingTeam *Team
-	DefendingTeam *Team
-	Half          int
-	RoundDuration int
-	RoundLoser    *Team
-	RoundNumber   int
-	RoundWinner   *Team
-	Players       []PlayerState
 }
 
 type GameState struct {
 	AttackingTeam    *Team
-	CurrentHalf      int
-	CurrentRound     int
+	CurrentHalf      uint8
+	CurrentRound     RoundState
 	DefendingTeam    *Team
 	GameRunning      bool
 	Rounds           []RoundState
-	SpikePlanted     bool
-	TeamOneRoundsWon int
-	TeamOneScore     int
-	TeamOneWon       bool
-	TeamTwoRoundsWon int
-	TeamTwoScore     int
-	TeamTwoWon       bool
+	TeamOne          *Team
+	TeamOneRoundsWon uint8
+	TeamOneScore     uint8
+	TeamTwo          *Team
+	TeamTwoRoundsWon uint8
+	TeamTwoScore     uint8
+	Map              constants.Map
 }
 
 func NewGameState() GameState {
 	return GameState{
-		AttackingTeam:    nil,
-		CurrentHalf:      1,
-		CurrentRound:     1,
-		DefendingTeam:    nil,
+		CurrentHalf: 1,
+		CurrentRound: RoundState{
+			RoundNumber: 0, // Start at 0 to indicate no round has been started yet
+		},
 		GameRunning:      false,
 		Rounds:           []RoundState{},
-		SpikePlanted:     false,
+		TeamOne:          &Team{},
 		TeamOneRoundsWon: 0,
 		TeamOneScore:     0,
-		TeamOneWon:       false,
+		TeamTwo:          &Team{},
 		TeamTwoRoundsWon: 0,
 		TeamTwoScore:     0,
-		TeamTwoWon:       false,
+	}
+}
+
+type RoundState struct {
+	AttackingTeam        *Team
+	DefendingTeam        *Team
+	Half                 uint8
+	RoundDuration        int
+	RoundLoser           *Team
+	RoundNumber          uint8
+	RoundWinner          *Team
+	Players              []*PlayerState
+	SpikePlanted         bool
+	SpikePlantedLocation constants.PlantSite
+	SpikeDetonated       bool
+}
+
+func NewRoundState(roundNumber uint8) RoundState {
+	return RoundState{
+		AttackingTeam:        nil,
+		DefendingTeam:        nil,
+		Half:                 1,
+		RoundDuration:        100,
+		RoundLoser:           nil,
+		RoundNumber:          roundNumber,
+		RoundWinner:          nil,
+		Players:              []*PlayerState{},
+		SpikePlanted:         false,
+		SpikePlantedLocation: constants.PlantSiteA,
+		SpikeDetonated:       false,
 	}
 }
