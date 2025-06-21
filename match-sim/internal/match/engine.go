@@ -2,8 +2,10 @@ package match
 
 import (
 	"fmt"
+	"maps"
 	"match-sim/internal/constants"
 	"math/rand"
+	"slices"
 	"time"
 )
 
@@ -40,41 +42,23 @@ func (match Match) SimulateMatch(seed int64) {
 	fmt.Println("Attacking team", gameState.AttackingTeam.ID)
 	fmt.Println("Defending team", gameState.DefendingTeam.ID)
 
-	// team 1 agent selection
-	availableAgents := constants.Agents
-	for i := range match.Teams[0].Players {
-		possibleAgents := filterAgents(availableAgents, match.Teams[0].Players[i].Role)
-		agent := possibleAgents[matchRng.Intn(len(possibleAgents))]
-		// Update game state - TODO: Move to event system
-		match.Teams[0].Players[i].Agent = agent
-		availableAgents = removeAgent(availableAgents, agent)
-	}
-
-	// team 2 agent selection
-	availableAgents = constants.Agents
-	for i := range match.Teams[1].Players {
-		possibleAgents := filterAgents(availableAgents, match.Teams[1].Players[i].Role)
-		agent := possibleAgents[matchRng.Intn(len(possibleAgents))]
-
-		availableAgents = removeAgent(availableAgents, agent)
-		// Update game state - TODO: Move to event system
-		match.Teams[1].Players[i].Agent = agent
-	}
+	match.Teams[0].AgentSelect(constants.Agents, matchRng)
+	match.Teams[1].AgentSelect(constants.Agents, matchRng)
 
 	fmt.Println("Team 1 agents", match.Teams[0].Players)
 	fmt.Println("Team 2 agents", match.Teams[1].Players)
 
 	// start match
-	gameState.GameRunning = true
-	for gameState.GameRunning {
-		gameState.StartRound(rules)
+	// gameState.GameRunning = true
+	// for gameState.GameRunning {
+	// 	gameState.StartRound(rules)
 
-		// Check if a team has won the match
-		if gameState.TeamOneWon || gameState.TeamTwoWon {
-			gameState.GameRunning = false
-			break
-		}
-	}
+	// 	// Check if a team has won the match
+	// 	if gameState.TeamOneWon || gameState.TeamTwoWon {
+	// 		gameState.GameRunning = false
+	// 		break
+	// 	}
+	// }
 }
 
 // Starts a round - runs the round logic for each tick until a team wins the round
@@ -149,23 +133,35 @@ func (gameState *GameState) UpdateRecordableEvent(event string) {
 	// TODO: send update to event system
 }
 
-// Filters agents by role - useful for getting a slice of agents for a given role
-func filterAgents(agents []constants.Agent, role string) []constants.Agent {
-	filteredAgents := []constants.Agent{}
-	for _, agent := range agents {
-		if agent.Role == role {
-			filteredAgents = append(filteredAgents, agent)
-		}
+func (team Team) AgentSelect(agents map[constants.AgentName]constants.Agent, rng *rand.Rand) {
+	availableAgents := make(map[constants.AgentName]constants.Agent)
+	maps.Copy(availableAgents, agents)
+
+	for i := range team.Players {
+		possibleAgents := filterAgents(availableAgents, team.Players[i].Role)
+		agent := possibleAgents[rng.Intn(len(possibleAgents))]
+		// TODO: update event system
+
+		team.Players[i].Agent = agent
+		delete(availableAgents, agent.Name)
 	}
-	return filteredAgents
 }
 
-// Removes an agent from a slice of agents - useful for removing an agent from the available agents list
-func removeAgent(agents []constants.Agent, agent constants.Agent) []constants.Agent {
+// Filters agents by role - useful for getting a slice of agents for a given role
+func filterAgents(agents map[constants.AgentName]constants.Agent, role constants.AgentRole) []constants.Agent {
+	// In order for agent selection to be deterministic, we must iterate over the map in a consistent order.
+	// We do this by extracting the keys, sorting them, and then iterating over the sorted keys.
+	var keys []constants.AgentName
+	for k := range agents {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
 	filteredAgents := []constants.Agent{}
-	for _, a := range agents {
-		if a.ID != agent.ID {
-			filteredAgents = append(filteredAgents, a)
+	for _, key := range keys {
+		agent := agents[key]
+		if agent.Role == role {
+			filteredAgents = append(filteredAgents, agent)
 		}
 	}
 	return filteredAgents

@@ -4,7 +4,7 @@ import "match-sim/internal/constants"
 
 type Player struct {
 	ID    string
-	Role  string
+	Role  constants.AgentRole
 	Agent constants.Agent
 }
 

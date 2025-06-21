@@ -1,16 +1,79 @@
 package constants
 
+type AgentName uint8
+
 const (
-	AgentRole_Controller = "Controller"
-	AgentRole_Duelist    = "Duelist"
-	AgentRole_Initiator  = "Initiator"
-	AgentRole_Sentinel   = "Sentinel"
+	Astra AgentName = iota
+	Breach
+	Brimstone
+	Chamber
+	Clove
+	Harbor
+	Iso
+	Jett
+	KAYO
+	Killjoy
+	Neon
+	Raze
+	Reyna
+	Sage
+	Skye
+	Tejo
+	Viper
+	Waylay
+	Yoru
 )
+
+var agentName = map[AgentName]string{
+	Astra:     "Astra",
+	Breach:    "Breach",
+	Brimstone: "Brimstone",
+	Chamber:   "Chamber",
+	Clove:     "Clove",
+	Harbor:    "Harbor",
+	Iso:       "Iso",
+	Jett:      "Jett",
+	KAYO:      "KAY/O",
+	Killjoy:   "Killjoy",
+	Neon:      "Neon",
+	Raze:      "Raze",
+	Reyna:     "Reyna",
+	Sage:      "Sage",
+	Skye:      "Skye",
+	Tejo:      "Tejo",
+	Viper:     "Viper",
+	Waylay:    "Waylay",
+	Yoru:      "Yoru",
+}
+
+func (ss AgentName) String() string {
+	return agentName[ss]
+}
+
+type AgentRole uint8
+
+const (
+	Controller AgentRole = iota
+	Duelist
+	Initiator
+	Sentinel
+)
+
+var agentRole = map[AgentRole]string{
+	Controller: "Controller",
+	Duelist:    "Duelist",
+	Initiator:  "Initiator",
+	Sentinel:   "Sentinel",
+}
+
+func (ss AgentRole) String() string {
+	return agentRole[ss]
+}
 
 type Agent struct {
 	ID        string
-	Name      string
-	Role      string
+	Name      AgentName
+	Role      AgentRole
 	Abilities []Ability
 }
 
@@ -21,11 +84,11 @@ type Ability struct {
 	Damage          int
 }
 
-var Agents = []Agent{
-	{
+var Agents = map[AgentName]Agent{
+	Astra: {
 		ID:   "1",
-		Name: "Astra",
-		Role: AgentRole_Controller,
+		Name: Astra,
+		Role: Controller,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -41,10 +104,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Breach: {
 		ID:   "2",
-		Name: "Breach",
-		Role: AgentRole_Initiator,
+		Name: Breach,
+		Role: Initiator,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -54,10 +117,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Brimstone: {
 		ID:   "3",
-		Name: "Brimstone",
-		Role: AgentRole_Controller,
+		Name: Brimstone,
+		Role: Controller,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -67,10 +130,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Chamber: {
 		ID:   "4",
-		Name: "Chamber",
-		Role: AgentRole_Sentinel,
+		Name: Chamber,
+		Role: Sentinel,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -80,9 +143,9 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{ID: "5",
-		Name: "Clove",
-		Role: AgentRole_Controller,
+	Clove: {ID: "5",
+		Name: Clove,
+		Role: Controller,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -92,10 +155,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Harbor: {
 		ID:   "10",
-		Name: "Harbor",
-		Role: AgentRole_Controller,
+		Name: Harbor,
+		Role: Controller,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -105,10 +168,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Iso: {
 		ID:   "11",
-		Name: "Iso",
-		Role: AgentRole_Duelist,
+		Name: Iso,
+		Role: Duelist,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -118,10 +181,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Jett: {
 		ID:   "12",
-		Name: "Jett",
-		Role: AgentRole_Duelist,
+		Name: Jett,
+		Role: Duelist,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -131,10 +194,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	KAYO: {
 		ID:   "13",
-		Name: "KAY/O",
-		Role: AgentRole_Sentinel,
+		Name: KAYO,
+		Role: Sentinel,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -144,10 +207,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Killjoy: {
 		ID:   "14",
-		Name: "Killjoy",
-		Role: AgentRole_Sentinel,
+		Name: Killjoy,
+		Role: Sentinel,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -157,10 +220,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Neon: {
 		ID:   "15",
-		Name: "Neon",
-		Role: AgentRole_Duelist,
+		Name: Neon,
+		Role: Duelist,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -170,10 +233,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Raze: {
 		ID:   "18",
-		Name: "Raze",
-		Role: AgentRole_Duelist,
+		Name: Raze,
+		Role: Duelist,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -183,10 +246,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Reyna: {
 		ID:   "19",
-		Name: "Reyna",
-		Role: AgentRole_Duelist,
+		Name: Reyna,
+		Role: Duelist,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -196,10 +259,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Sage: {
 		ID:   "20",
-		Name: "Sage",
-		Role: AgentRole_Sentinel,
+		Name: Sage,
+		Role: Sentinel,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -209,10 +272,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Skye: {
 		ID:   "21",
-		Name: "Skye",
-		Role: AgentRole_Initiator,
+		Name: Skye,
+		Role: Initiator,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -222,10 +285,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Tejo: {
 		ID:   "23",
-		Name: "Tejo",
-		Role: AgentRole_Initiator,
+		Name: Tejo,
+		Role: Initiator,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -235,10 +298,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Viper: {
 		ID:   "24",
-		Name: "Viper",
-		Role: AgentRole_Controller,
+		Name: Viper,
+		Role: Controller,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -248,10 +311,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Waylay: {
 		ID:   "25",
-		Name: "Waylay",
-		Role: AgentRole_Duelist,
+		Name: Waylay,
+		Role: Duelist,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
@@ -261,10 +324,10 @@ var Agents = []Agent{
 			},
 		},
 	},
-	{
+	Yoru: {
 		ID:   "26",
-		Name: "Yoru",
-		Role: AgentRole_Duelist,
+		Name: Yoru,
+		Role: Duelist,
 		Abilities: []Ability{
 			{
 				Name:            "AbilityOne",
