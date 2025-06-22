@@ -7,11 +7,10 @@ import (
 	"match-sim/internal/event"
 	"math/rand"
 	"slices"
-	"time"
 )
 
-func (match Match) SimulateMatch(seed int64, isRealTime bool) {
-	matchEvent := event.NewEventLogger(match.ID)
+func (match *Match) SimulateMatch(seed int64, isRealTime bool) {
+	matchEvent := event.NewMatchEvent(match.ID)
 
 	slog.Info("Simulating match", "match", match.ID)
 
@@ -26,17 +25,15 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 	// seed random number generator
 	matchSeed := rand.NewSource(seed)
 	matchRng := rand.New(matchSeed)
-
-	slog.Info("Match RNG", "matchRng", matchRng)
+	match.MatchRng = matchRng
 
 	// load rules
-	rules := DefaultRules()
-	slog.Info("Rules", "rules", rules)
+	match.Rules = DefaultRules()
+	match.IsRealTime = isRealTime
 
 	// start game
-	gameState := NewGameState(rules, isRealTime)
-	gameState.TeamOne = &match.Teams[0]
-	gameState.TeamTwo = &match.Teams[1]
+	gameState := NewGameState()
+	match.GameState = &gameState
 
 	// decide map
 	mapKeys := []constants.MapName{}
@@ -45,16 +42,15 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 	}
 	slices.Sort(mapKeys)
 	gameMap := constants.Maps[mapKeys[matchRng.Intn(len(mapKeys))]]
-	gameState.Map = gameMap
-	slog.Info("Map Selection", "map", gameState.Map.Name)
+	match.Map = gameMap
+	slog.Info("Map Selection", "map", match.Map.Name)
 
 	// decide starting sides
 	attackingTeamIndex := matchRng.Intn(2)
-	gameState.AttackingTeam = &match.Teams[attackingTeamIndex]
-	gameState.DefendingTeam = &match.Teams[1-attackingTeamIndex]
-
-	slog.Info("Attacking", "team", gameState.AttackingTeam.ID)
-	slog.Info("Defending", "team", gameState.DefendingTeam.ID)
+	match.GameState.AttackingTeam = &match.Teams[attackingTeamIndex]
+	match.GameState.DefendingTeam = &match.Teams[1-attackingTeamIndex]
+	matchEvent.SetAttackingTeam(match.GameState.AttackingTeam.ID)
+	matchEvent.SetDefendingTeam(match.GameState.DefendingTeam.ID)
 
 	// simulate agent selection
 	match.Teams[0].AgentSelect(constants.Agents, matchRng)
@@ -62,69 +58,36 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 
 	// initialize player game state
 	// used to track the player's stats throughout a match
-	gameState.InitPlayerGameState(&match.Teams[0])
-	gameState.InitPlayerGameState(&match.Teams[1])
+	match.GameState.InitPlayerGameState(&match.Teams[0])
+	match.GameState.InitPlayerGameState(&match.Teams[1])
 
 	// start match
-	gameState.GameRunning = true
-	for gameState.GameRunning {
+	match.GameState.GameRunning = true
+	for match.GameState.GameRunning {
 		// Swap teams at the end of the half
-		if gameState.CurrentRound.RoundNumber == 12 {
-			gameState.CurrentHalf = 2
-			gameState.AttackingTeam, gameState.DefendingTeam = gameState.DefendingTeam, gameState.AttackingTeam
-			matchEvent.SetAttackingTeam(gameState.AttackingTeam.ID)
-			matchEvent.SetDefendingTeam(gameState.DefendingTeam.ID)
+		if match.GameState.CurrentRound.RoundNumber == 12 {
+			match.GameState.CurrentHalf = 2
+			match.GameState.AttackingTeam, match.GameState.DefendingTeam = match.GameState.DefendingTeam, match.GameState.AttackingTeam
+			matchEvent.SetAttackingTeam(match.GameState.AttackingTeam.ID)
+			matchEvent.SetDefendingTeam(match.GameState.DefendingTeam.ID)
 		}
 
-		gameState.StartRound(gameState.AttackingTeam, gameState.DefendingTeam, matchRng)
+		match.StartRound(match.GameState.AttackingTeam, match.GameState.DefendingTeam)
 		// Get round winner and loser and up their score here
-		roundWinner := gameState.CurrentRound.RoundWinner
-		if roundWinner == gameState.TeamOne {
-			gameState.TeamOneRoundsWon++
-		} else if roundWinner == gameState.TeamTwo {
-			gameState.TeamTwoRoundsWon++
+		roundWinner := match.GameState.CurrentRound.RoundWinner
+		if roundWinner == &match.Teams[0] {
+			match.GameState.TeamOneScore++
+		} else if roundWinner == &match.Teams[1] {
+			match.GameState.TeamTwoScore++
 		}
 
 		// Check if game goes to overtime
 		// TODO: handle overtime
 
 		// Check if a team has won the match
-		if gameState.TeamOneRoundsWon == 13 || gameState.TeamTwoRoundsWon == 13 {
-			gameState.GameRunning = false
-			slog.Info("Match Ended", "teamOneScore", gameState.TeamOneRoundsWon, "teamTwoScore", gameState.TeamTwoRoundsWon)
-			break
-		}
-	}
-}
-
-// Starts a round - runs the round logic for each tick until a team wins the round
-func (gameState *GameState) StartRound(attackingTeam *Team, defendingTeam *Team, rng *rand.Rand) {
-	gameState.CurrentRound = NewRoundState(gameState.CurrentRound.RoundNumber + 1)
-
-	gameState.CurrentRound.AttackingTeam = attackingTeam
-	gameState.CurrentRound.DefendingTeam = defendingTeam
-
-	const tickRate uint = 128
-	tickDuration := time.Second / time.Duration(tickRate)
-
-	// Round loop - run this logic for each round until a team reaches 13 rounds won
-	totalTicks := uint(gameState.Rules.RoundDurationSeconds) * tickRate
-
-	// Initialize player round state
-	gameState.CurrentRound.InitPlayerRoundState(attackingTeam)
-	gameState.CurrentRound.InitPlayerRoundState(defendingTeam)
-
-	simulator := NewGameTickSimulator(
-		totalTicks,
-		gameState,
-		rng,
-		tickRate,
-		tickDuration,
-	)
-
-	for tick := uint(0); tick < simulator.TotalTicks; tick++ {
-		exit := simulator.SimulateGameTick(&tick)
-		if exit {
+		if match.GameState.TeamOneScore == 13 || match.GameState.TeamTwoScore == 13 {
+			match.GameState.GameRunning = false
+			slog.Info("Match Ended", "teamOneScore", match.GameState.TeamOneScore, "teamTwoScore", match.GameState.TeamTwoScore)
 			break
 		}
 	}
@@ -145,57 +108,7 @@ func (gameState *GameState) EndRound(winningTeam *Team, losingTeam *Team) {
 	gameState.CurrentRound.RoundLoser = losingTeam
 	gameState.Rounds = append(gameState.Rounds, gameState.CurrentRound)
 
-	slog.Info("End Round", "round", gameState.CurrentRound.RoundNumber, "winningTeam", winningTeam.ID, "losingTeam", losingTeam.ID, "roundWinner", winningTeam.ID, "roundLoser", losingTeam.ID)
-}
-
-func (roundState *RoundState) InitPlayerRoundState(team *Team) {
-	for i := range team.Players {
-		playerRoundState := NewPlayerRoundState(team, &team.Players[i], 0)
-		// slog.Info("Init Player Round State", "player", playerRoundState.LogValue())
-		roundState.PlayerRoundState = append(roundState.PlayerRoundState, &playerRoundState)
-	}
-}
-
-func (roundState *RoundState) GetAlivePlayers(team *Team) []*PlayerRoundState {
-	alivePlayers := make([]*PlayerRoundState, 0, 10)
-	for _, p := range roundState.PlayerRoundState {
-		if p.Alive && p.Team == team {
-			alivePlayers = append(alivePlayers, p)
-		}
-	}
-	return alivePlayers
-}
-func (roundState *RoundState) SimulatePlayerKill(rng *rand.Rand) PlayerKill {
-	allAttackingTeamPlayers := roundState.GetAlivePlayers(roundState.AttackingTeam)
-	allDefendingTeamPlayers := roundState.GetAlivePlayers(roundState.DefendingTeam)
-	allAlivePlayers := append(allAttackingTeamPlayers, allDefendingTeamPlayers...)
-
-	if len(allAlivePlayers) < 2 {
-		return PlayerKill{}
-	}
-
-	// Pick a random killer.
-	killer := allAlivePlayers[rng.Intn(len(allAlivePlayers))]
-
-	// Pick a random victim from an opposing team.
-	opponentsAlive := make([]*PlayerRoundState, 0, 5)
-	for _, p := range allAlivePlayers {
-		if p.Team != killer.Team {
-			opponentsAlive = append(opponentsAlive, p)
-		}
-	}
-
-	if len(opponentsAlive) == 0 {
-		return PlayerKill{}
-	}
-	victim := opponentsAlive[rng.Intn(len(opponentsAlive))]
-	victim.Alive = false
-
-	return PlayerKill{
-		Killer: killer.Player,
-		Victim: victim.Player,
-		Weapon: constants.Weapon{Name: constants.Sheriff}, //TODO: update this to the weapon used
-	}
+	slog.Info("End Round", "round", gameState.CurrentRound.RoundNumber, "roundWinner", winningTeam.ID, "roundLoser", losingTeam.ID)
 }
 
 // Agent selection simulation logic

@@ -5,31 +5,35 @@ import (
 	"time"
 )
 
-type Event struct {
+type MatchEvent struct {
+	matchID string
+}
+
+func NewMatchEvent(matchID string) *MatchEvent {
+	return &MatchEvent{matchID: matchID}
+}
+
+func (l *MatchEvent) SetAttackingTeam(teamID string) {
+	slog.Info("Set Attacking Team", "matchID", l.matchID, "teamID", teamID, "timestamp", time.Now().Format(time.RFC3339))
+}
+
+func (l *MatchEvent) SetDefendingTeam(teamID string) {
+	slog.Info("Set Defending Team", "matchID", l.matchID, "teamID", teamID, "timestamp", time.Now().Format(time.RFC3339))
+}
+
+func (l *MatchEvent) MapSelected(mapName string) {
+	slog.Info("Map Selected", "matchID", l.matchID, "mapName", mapName, "timestamp", time.Now().Format(time.RFC3339))
+}
+
+type RoundEvent struct {
 	matchID string
 	roundID int
 }
 
-func NewEventLogger(matchID string) *Event {
-	return &Event{matchID: matchID}
+func NewRoundEvent(matchID string, roundID int) *RoundEvent {
+	return &RoundEvent{matchID: matchID, roundID: roundID}
 }
 
-func NewRoundEvent(matchID string, roundID int) *Event {
-	return &Event{matchID: matchID, roundID: roundID}
-}
-
-func (l *Event) SetAttackingTeam(teamID string) {
-	slog.Info("Set Attacking Team", "matchID", l.matchID, "teamID", teamID, "timestamp", time.Now().Format(time.RFC3339))
-}
-
-func (l *Event) SetDefendingTeam(teamID string) {
-	slog.Info("Set Defending Team", "matchID", l.matchID, "teamID", teamID, "timestamp", time.Now().Format(time.RFC3339))
-}
-
-func (l *Event) MapSelected(mapName string) {
-	slog.Info("Map Selected", "matchID", l.matchID, "mapName", mapName, "timestamp", time.Now().Format(time.RFC3339))
-}
-
-func SpikeDefused(timelineTick int, playerID string) {
+func (l *RoundEvent) SpikeDefused(timelineTick int, playerID string) {
 	slog.Info("Spike Defused", "playerID", playerID, "timestamp", time.Now().Format(time.RFC3339), "timelineTick", timelineTick)
 }
