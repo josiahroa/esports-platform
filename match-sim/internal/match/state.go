@@ -97,14 +97,16 @@ func NewGameState() GameState {
 }
 
 type PlayerRoundState struct {
+	Team            *Team
 	Player          *Player
 	StartingCredits uint
 	EndCredits      uint
 	Alive           bool
 }
 
-func NewPlayerRoundState(player *Player, startingCredits uint) PlayerRoundState {
+func NewPlayerRoundState(team *Team, player *Player, startingCredits uint) PlayerRoundState {
 	return PlayerRoundState{
+		Team:            team,
 		Player:          player,
 		StartingCredits: startingCredits,
 		EndCredits:      0,
@@ -128,6 +130,9 @@ type RoundState struct {
 	PlayerRoundState     []*PlayerRoundState
 	SpikePlanted         bool
 	SpikePlantedLocation constants.PlantSite
+	SpikePlantedBy       *Player
+	SpikeDefused         bool
+	SpikeDefusedBy       *Player
 	SpikeDetonated       bool
 }
 

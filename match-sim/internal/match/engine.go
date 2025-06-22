@@ -11,13 +11,13 @@ import (
 )
 
 func (match Match) SimulateMatch(seed int64, isRealTime bool) {
-	fmt.Println("Simulating match", match.ID)
+	slog.Info("Simulating match", "match", match.ID)
 
-	fmt.Println("Loading teams")
+	slog.Info("Loading teams")
 	for _, team := range match.Teams {
-		fmt.Println("Loading players for team", team.ID)
+		slog.Info("Loading players for team", "team", team.ID)
 		for _, player := range team.Players {
-			fmt.Println("Loading player", player.ID)
+			slog.Info("Loading player", "player", player.ID)
 		}
 	}
 
@@ -25,11 +25,11 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 	matchSeed := rand.NewSource(seed)
 	matchRng := rand.New(matchSeed)
 
-	fmt.Println("Match RNG", matchRng)
+	slog.Info("Match RNG", "matchRng", matchRng)
 
 	// load rules
 	rules := DefaultRules()
-	fmt.Println("Loading rules", rules)
+	slog.Info("Rules", "rules", rules)
 
 	// start game
 	gameState := NewGameState()
@@ -69,11 +69,10 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 		// Swap teams at the end of the half
 		if gameState.CurrentRound.RoundNumber == 12 {
 			gameState.CurrentHalf = 2
-			gameState.AttackingTeam = gameState.DefendingTeam
-			gameState.DefendingTeam = gameState.AttackingTeam
+			gameState.AttackingTeam, gameState.DefendingTeam = gameState.DefendingTeam, gameState.AttackingTeam
 		}
 
-		gameState.StartRound(rules, gameState.AttackingTeam, gameState.DefendingTeam, RoundOptions{IsRealTime: true})
+		gameState.StartRound(rules, gameState.AttackingTeam, gameState.DefendingTeam, matchRng, RoundOptions{IsRealTime: false})
 		// Get round winner and loser and up their score here
 		roundWinner := gameState.CurrentRound.RoundWinner
 		if roundWinner == gameState.TeamOne {
@@ -88,13 +87,14 @@ func (match Match) SimulateMatch(seed int64, isRealTime bool) {
 		// Check if a team has won the match
 		if gameState.TeamOneRoundsWon == 13 || gameState.TeamTwoRoundsWon == 13 {
 			gameState.GameRunning = false
+			slog.Info("Match Ended", "teamOneScore", gameState.TeamOneRoundsWon, "teamTwoScore", gameState.TeamTwoRoundsWon)
 			break
 		}
 	}
 }
 
 // Starts a round - runs the round logic for each tick until a team wins the round
-func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendingTeam *Team, roundOptions RoundOptions) {
+func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendingTeam *Team, rng *rand.Rand, roundOptions RoundOptions) {
 	gameState.CurrentRound = NewRoundState(gameState.CurrentRound.RoundNumber + 1)
 	slog.Info("Starting round", "round", gameState.CurrentRound.RoundNumber)
 
@@ -112,36 +112,66 @@ func (gameState *GameState) StartRound(rules Rules, attackingTeam *Team, defendi
 	gameState.CurrentRound.InitPlayerRoundState(defendingTeam)
 
 	for tick := 0; tick < totalTicks; tick++ {
-
-		// Kill logic
-		// if a player is alive, they have a chance of killing a player on the other team
-		// if a player gets a kill, there is a chance that their teammates can get an assist
-		// when a player gets a kill, randomly select an enemy to die
+		const killProbability = 0.0004 // Results in an average of ~5 kills per 100s round
+		if rng.Float64() < killProbability {
+			playerKill := gameState.CurrentRound.SimulatePlayerKill(rng)
+			slog.Info("Player Kill", "playerKill", playerKill)
+		}
 
 		// Attacker Plant Logic
 		// after 15 seconds, there is a chance that the spike can be planted
+		if tick >= 15*TickRate && rng.Float64() < 0.0001 {
+			gameState.CurrentRound.SpikePlanted = true
+			attackingTeamPlayers := gameState.CurrentRound.GetAlivePlayers(gameState.CurrentRound.AttackingTeam)
+			gameState.CurrentRound.SpikePlantedBy = attackingTeamPlayers[rng.Intn(len(attackingTeamPlayers))].Player
+			slog.Info("Spike Planted", "round", gameState.CurrentRound.RoundNumber)
+			slog.Info("Spike Planted By", "player", gameState.CurrentRound.SpikePlantedBy.ID)
+		}
 
 		// Defuse Logic
 		// after the spike has been planted, there is a chance that the defending team can defuse
 		// Round ends if the defending team defuses the spike [defenders win]
+		if gameState.CurrentRound.SpikePlanted && rng.Float64() < 0.0001 {
+			gameState.CurrentRound.SpikeDefused = true
+			defendingTeamPlayers := gameState.CurrentRound.GetAlivePlayers(gameState.CurrentRound.DefendingTeam)
+			gameState.CurrentRound.SpikeDefusedBy = defendingTeamPlayers[rng.Intn(len(defendingTeamPlayers))].Player
+			slog.Info("Spike Defused", "round", gameState.CurrentRound.RoundNumber)
+			slog.Info("Spike Defused By", "player", gameState.CurrentRound.SpikeDefusedBy.ID)
+			slog.Info("Spike Detonated", "round", gameState.CurrentRound.RoundNumber)
+
+			gameState.EndRound(gameState.CurrentRound.DefendingTeam, gameState.CurrentRound.AttackingTeam)
+			return
+		}
 
 		// Reset total ticks if spike is planted
 		if gameState.CurrentRound.SpikePlanted {
+			tick = 0
 			totalTicks = rules.RoundDurationSpikePlantedSeconds * TickRate
 		}
 
 		// Round ends if the attacking team successfully detonates the spike [attackers win]
 		if gameState.CurrentRound.SpikeDetonated {
+			slog.Info("Spike Detonated", "round", gameState.CurrentRound.RoundNumber)
 			gameState.EndRound(gameState.CurrentRound.AttackingTeam, gameState.CurrentRound.DefendingTeam)
 			return
 		}
 
 		// Round ends if the attacking team defeats all defenders [attackers win]
-
+		if len(gameState.CurrentRound.GetAlivePlayers(gameState.CurrentRound.DefendingTeam)) == 0 {
+			slog.Info("Defending Team Eliminated", "round", gameState.CurrentRound.RoundNumber)
+			gameState.EndRound(gameState.CurrentRound.AttackingTeam, gameState.CurrentRound.DefendingTeam)
+			return
+		}
 		// Round ends if the defending team defeats all attackers before the spike is planted [defenders win]
+		if len(gameState.CurrentRound.GetAlivePlayers(gameState.CurrentRound.AttackingTeam)) == 0 && !gameState.CurrentRound.SpikePlanted {
+			slog.Info("Attacking Team Eliminated", "round", gameState.CurrentRound.RoundNumber)
+			gameState.EndRound(gameState.CurrentRound.DefendingTeam, gameState.CurrentRound.AttackingTeam)
+			return
+		}
 
 		// Round ends if the time runs out before the attacking team plants the spike [defenders win]
 		if tick == totalTicks-1 {
+			slog.Info("Time Ran Out", "round", gameState.CurrentRound.RoundNumber)
 			gameState.EndRound(gameState.CurrentRound.DefendingTeam, gameState.CurrentRound.AttackingTeam)
 			return
 		}
@@ -196,19 +226,62 @@ func (gameState *GameState) InitPlayerGameState(team *Team) {
 	}
 }
 
-func (roundState *RoundState) InitPlayerRoundState(team *Team) {
-	for i := range team.Players {
-		playerRoundState := NewPlayerRoundState(&team.Players[i], 0)
-		slog.Info("Init Player Round State", "player", playerRoundState.LogValue())
-		roundState.PlayerRoundState = append(roundState.PlayerRoundState, &playerRoundState)
-	}
-}
-
 // Post processing logic for ending a round
 func (gameState *GameState) EndRound(winningTeam *Team, losingTeam *Team) {
 	gameState.CurrentRound.RoundWinner = winningTeam
 	gameState.CurrentRound.RoundLoser = losingTeam
 	gameState.Rounds = append(gameState.Rounds, gameState.CurrentRound)
+
+	slog.Info("End Round", "round", gameState.CurrentRound.RoundNumber, "winningTeam", winningTeam.ID, "losingTeam", losingTeam.ID, "roundWinner", winningTeam.ID, "roundLoser", losingTeam.ID)
+}
+
+func (roundState *RoundState) InitPlayerRoundState(team *Team) {
+	for i := range team.Players {
+		playerRoundState := NewPlayerRoundState(team, &team.Players[i], 0)
+		// slog.Info("Init Player Round State", "player", playerRoundState.LogValue())
+		roundState.PlayerRoundState = append(roundState.PlayerRoundState, &playerRoundState)
+	}
+}
+
+func (roundState *RoundState) GetAlivePlayers(team *Team) []*PlayerRoundState {
+	alivePlayers := make([]*PlayerRoundState, 0, 10)
+	for _, p := range roundState.PlayerRoundState {
+		if p.Alive && p.Team == team {
+			alivePlayers = append(alivePlayers, p)
+		}
+	}
+	return alivePlayers
+}
+func (roundState *RoundState) SimulatePlayerKill(rng *rand.Rand) PlayerKill {
+	allAttackingTeamPlayers := roundState.GetAlivePlayers(roundState.AttackingTeam)
+	allDefendingTeamPlayers := roundState.GetAlivePlayers(roundState.DefendingTeam)
+	allAlivePlayers := append(allAttackingTeamPlayers, allDefendingTeamPlayers...)
+
+	// Pick a random killer.
+	killer := allAttackingTeamPlayers[rng.Intn(len(allAttackingTeamPlayers))]
+
+	// Pick a random victim from an opposing team.
+	opponentsAlive := make([]*PlayerRoundState, 0, 5)
+	for _, p := range allAlivePlayers {
+		if p.Team != killer.Team {
+			opponentsAlive = append(opponentsAlive, p)
+		}
+	}
+
+	if len(opponentsAlive) == 0 {
+		return PlayerKill{}
+	}
+	victim := opponentsAlive[rng.Intn(len(opponentsAlive))]
+	victim.Alive = false
+
+	slog.Info("Killer", "killer", killer.Player.ID)
+	slog.Info("Victim", "victim", victim.Player.ID)
+
+	return PlayerKill{
+		Killer: killer.Player,
+		Victim: victim.Player,
+		Weapon: constants.Weapon{Name: constants.Sheriff}, //TODO: update this to the weapon used
+	}
 }
 
 // Agent selection simulation logic
