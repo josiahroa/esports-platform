@@ -23,6 +23,10 @@ type Match struct {
 	Winner    *Team
 }
 
+func (m *Match) GetID() string {
+	return m.ID
+}
+
 type State struct {
 	Matches []Match
 }
@@ -31,6 +35,14 @@ type PlayerKill struct {
 	Killer *Player
 	Victim *Player
 	Weapon constants.Weapon
+}
+
+func (p *PlayerKill) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("killer_id", p.Killer.ID),
+		slog.String("victim_id", p.Victim.ID),
+		// slog.String("weapon", p.Weapon.Name), //TODO: add weapon
+	)
 }
 
 type PlayerGameState struct {
@@ -76,9 +88,11 @@ type GameState struct {
 	TeamTwoRoundsWon uint8
 	TeamTwoScore     uint8
 	Map              constants.Map
+	IsRealTime       bool
+	Rules            Rules
 }
 
-func NewGameState() GameState {
+func NewGameState(rules Rules, isRealTime bool) GameState {
 	return GameState{
 		CurrentHalf: 1,
 		CurrentRound: RoundState{
@@ -93,6 +107,8 @@ func NewGameState() GameState {
 		TeamTwo:          &Team{},
 		TeamTwoRoundsWon: 0,
 		TeamTwoScore:     0,
+		IsRealTime:       isRealTime,
+		Rules:            rules,
 	}
 }
 
