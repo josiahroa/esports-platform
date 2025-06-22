@@ -19,12 +19,14 @@ type Match struct {
 
 type Player struct {
 	ID    string
+	Name  string
 	Role  constants.AgentRole
 	Agent constants.Agent
 }
 
 type Team struct {
 	ID      string
+	Name    string
 	Players []Player
 }
 
