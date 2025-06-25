@@ -4,7 +4,7 @@
 
 TODO: Instructions for running locally
 
-This project uses Docker and Localstack to run.
+This project uses Docker to run.
 
 ## Components
 

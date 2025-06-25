@@ -1,12 +1,12 @@
 package main
 
 import (
-	"match-sim/configs"
+	"match-sim/mock"
 )
 
 func main() {
 	// Load match from configs
-	match := configs.Match1
+	match := mock.Match1
 
 	match.SimulateMatch(12345, false)
 }

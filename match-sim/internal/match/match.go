@@ -12,7 +12,7 @@ type Match struct {
 	GameState  *GameState
 	Winner     *Team
 	IsRealTime bool
-	Rules      Rules
+	Rules      constants.Rules
 	MatchRng   *rand.Rand
 	Map        constants.Map
 }

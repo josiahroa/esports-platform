@@ -1,4 +1,4 @@
-package match
+package constants
 
 type Rules struct {
 	RoundDurationSeconds             int

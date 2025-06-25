@@ -28,7 +28,7 @@ func (match *Match) SimulateMatch(seed int64, isRealTime bool) {
 	match.MatchRng = matchRng
 
 	// load rules
-	match.Rules = DefaultRules()
+	match.Rules = constants.DefaultRules()
 	match.IsRealTime = isRealTime
 
 	// start game
