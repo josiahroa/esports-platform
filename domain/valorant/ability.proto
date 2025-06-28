@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "match-sim/internal/domain/valorant";
+
+enum Debuff {
+    CONCUSS = 0;
+    FLASH = 1;
+    KNOCKBACK = 2;
+}
+
+message Ability {
+    string name = 1;
+    string description = 2; 
+    int32 cost = 3;
+    int32 cooldown_seconds = 4;
+    int32 duration_seconds = 5;
+    float windup_seconds = 6;
+    int32 damage = 7;
+    string debuff_applied = 8;
+}
+
+

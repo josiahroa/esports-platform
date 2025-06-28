@@ -4,6 +4,10 @@
 
 TODO: Instructions for running locally
 
+This project requires protoc to develop
+
+- https://protobuf.dev/getting-started/gotutorial/
+
 This project uses Docker to run.
 
 ## Components

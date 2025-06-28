@@ -1,6 +1,6 @@
 package match
 
-import "match-sim/internal/constants"
+import "match-sim/internal/domain/valorant"
 
 // Match type that we receive from the tournament orchestrator
 type Match struct {
@@ -18,5 +18,5 @@ type Player struct {
 	ID     string
 	Name   string
 	TeamID string
-	Role   constants.AgentRole // TODO: enum
+	Role   valorant.AgentRole
 }

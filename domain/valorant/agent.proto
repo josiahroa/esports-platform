@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+option go_package = "match-sim/internal/domain/valorant";
+
+import "ability.proto";
+
+enum AgentRole {
+    CONTROLLER = 0;
+    DUELIST = 1;
+    INITIATOR = 2;
+    SENTINEL = 3;
+}
+
+enum AgentName {
+    ASTRA = 0;
+    BREACH = 1;
+    BRIMSTONE = 2;
+    CHAMBER = 3;
+    CLOVE = 4;
+    HARBOR = 5;
+    ISO = 6;
+    JETT = 7;
+    KAYO = 8;
+    KILLJOY = 9;
+    NEON = 10;
+    RAZE = 11;
+    REYNA = 12;
+    SAGE = 13;
+    SKYE = 14;
+    TEJO = 15;
+    VIPER = 16;
+    WAYLAY = 17;
+    YORU = 18;
+}
+
+
+message Agent {
+    int32 id = 1;
+    AgentName name = 2;
+    AgentRole role = 3;
+    repeated Ability abilities = 4;
+}
