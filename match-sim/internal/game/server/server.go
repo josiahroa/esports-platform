@@ -18,7 +18,7 @@ import (
 
 type Config struct {
 	IsRealTime bool
-	Seed       *rand.Rand
+	Rng        *rand.Rand
 }
 
 type Server struct {

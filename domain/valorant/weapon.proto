@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "match-sim/internal/domain/valorant";
+
+enum WeaponType {
+    RIFLE = 0;
+    SMG = 1;
+    SHOTGUN = 2;
+    SNIPER = 3;
+    LMG = 4;
+    HEAVY = 5;
+}
+
+enum WeaponName {
+    KNIFE = 0;
+    CLASSIC = 1;
+    SHORTY = 2;
+    FRENZY = 3;
+    GHOST = 4;
+    SHERIFF = 5;
+    STINGER = 6;
+    SPECTRE = 7;
+    BUCKY = 8;
+    JUDGE = 9;
+    BULLDOG = 10;
+    GUARDIAN = 11;
+    PHANTOM = 12;
+    VANDAL = 13;
+    MARSHAL = 14;
+    OUTLAW = 15;
+    OPERATOR = 16;
+    ARES = 17;
+    ODIN = 18;
+}
+
+message Weapon {
+    WeaponType type = 1;
+    WeaponName name = 2;
+    uint32 cost = 3;
+}

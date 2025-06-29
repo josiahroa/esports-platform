@@ -9,11 +9,7 @@ import (
 )
 
 // Simulates a game and sends events to the gameserver
-func SimulateGame(match *match.Match, config *server.Config) {
-
-	// create a random number generator
-	// rng := rand.New(config.Seed)
-
+func SimulateMatch(match *match.Match, config *server.Config) {
 	// start the game server, we call its creation here because
 	// we are mocking the connection of the client to the servier
 	// in this simulator.

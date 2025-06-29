@@ -7,7 +7,11 @@ generate-agents:
 generate-maps:
 	protoc --go_out=../../ map.proto	
 
+generate-weapons:
+	protoc --go_out=../../ weapon.proto
+
 generate-all:
 	make generate-abilities
 	make generate-agents
 	make generate-maps
+	make generate-weapons
