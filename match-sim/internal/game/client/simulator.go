@@ -11,11 +11,15 @@ import (
 // Simulates a game and sends events to the gameserver
 func SimulateMatch(match *match.Match, config *server.Config) {
 	// start the game server, we call its creation here because
-	// we are mocking the connection of the client to the servier
+	// we are mocking the connection of the client to the server
 	// in this simulator.
 	server := server.StartServer(match)
 
-	slog.Info("Game started", "gameState", server.GameState)
+	slog.Info("Match started", "gameState", server.GameState)
+
+	// TODO: Select map
+
+	// TODO: Select agents
 
 	// add the first round to the game state
 	server.GameState.AddRound(game.CreateRound(0))
@@ -44,5 +48,9 @@ func SimulateMatch(match *match.Match, config *server.Config) {
 }
 
 func SimulateRound(server *server.Server) {
-	// simulate round
+	// TOOD: Simulate weapon purchases
+
+	// TODO: Simulate player actions
+
+	// TODO: Simulate round end
 }

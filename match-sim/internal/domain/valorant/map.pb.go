@@ -30,10 +30,10 @@ const (
 	MapName_FRACTURE MapName = 3
 	MapName_BREEZE   MapName = 4
 	MapName_ICEBOX   MapName = 5
-	MapName_BIND     MapName = 6
-	MapName_HAVEN    MapName = 7
-	MapName_SPLIT    MapName = 8
-	MapName_ASCENT   MapName = 9
+	MapName_ASCENT   MapName = 6
+	MapName_SPLIT    MapName = 7
+	MapName_HAVEN    MapName = 8
+	MapName_BIND     MapName = 9
 )
 
 // Enum value maps for MapName.
@@ -45,10 +45,10 @@ var (
 		3: "FRACTURE",
 		4: "BREEZE",
 		5: "ICEBOX",
-		6: "BIND",
-		7: "HAVEN",
-		8: "SPLIT",
-		9: "ASCENT",
+		6: "ASCENT",
+		7: "SPLIT",
+		8: "HAVEN",
+		9: "BIND",
 	}
 	MapName_value = map[string]int32{
 		"SUNSET":   0,
@@ -57,10 +57,10 @@ var (
 		"FRACTURE": 3,
 		"BREEZE":   4,
 		"ICEBOX":   5,
-		"BIND":     6,
-		"HAVEN":    7,
-		"SPLIT":    8,
-		"ASCENT":   9,
+		"ASCENT":   6,
+		"SPLIT":    7,
+		"HAVEN":    8,
+		"BIND":     9,
 	}
 )
 
@@ -211,12 +211,12 @@ const file_map_proto_rawDesc = "" +
 	"\n" +
 	"\x06BREEZE\x10\x04\x12\n" +
 	"\n" +
-	"\x06ICEBOX\x10\x05\x12\b\n" +
-	"\x04BIND\x10\x06\x12\t\n" +
-	"\x05HAVEN\x10\a\x12\t\n" +
-	"\x05SPLIT\x10\b\x12\n" +
+	"\x06ICEBOX\x10\x05\x12\n" +
 	"\n" +
-	"\x06ASCENT\x10\t*A\n" +
+	"\x06ASCENT\x10\x06\x12\t\n" +
+	"\x05SPLIT\x10\a\x12\t\n" +
+	"\x05HAVEN\x10\b\x12\b\n" +
+	"\x04BIND\x10\t*A\n" +
 	"\tPlantSite\x12\x10\n" +
 	"\fPLANT_SITE_A\x10\x00\x12\x10\n" +
 	"\fPLANT_SITE_B\x10\x01\x12\x10\n" +

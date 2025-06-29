@@ -9,10 +9,10 @@ enum MapName {
   FRACTURE = 3;
   BREEZE = 4;
   ICEBOX = 5;
-  BIND = 6;
-  HAVEN = 7;
-  SPLIT = 8;
-  ASCENT = 9;
+  ASCENT = 6;
+  SPLIT = 7;
+  HAVEN = 8;
+  BIND = 9;
 }
 
 enum PlantSite {
