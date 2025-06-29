@@ -1,11 +1,14 @@
 package match
 
-import "match-sim/internal/domain/valorant"
+import (
+	"match-sim/internal/domain/valorant"
+)
 
 // Match type that we receive from the tournament orchestrator
 type Match struct {
 	ID    string
 	Teams []Team
+	Map   *valorant.Map
 }
 
 type Team struct {

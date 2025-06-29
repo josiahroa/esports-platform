@@ -34,7 +34,7 @@ func main() {
 	rng := rand.New(rand.NewSource(seed))
 
 	// Load match from configs
-	// TODO: Load match from incoming match request
+	// TODO: Load match from incoming match request, requires tournament orchestrator service
 	match := Match1
 
 	client.SimulateMatch(&match, &server.Config{
