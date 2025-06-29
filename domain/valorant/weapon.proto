@@ -3,12 +3,13 @@ syntax = "proto3";
 option go_package = "match-sim/internal/domain/valorant";
 
 enum WeaponType {
-    RIFLE = 0;
-    SMG = 1;
+    SIDEARM = 0;
+    SMG = 1;    
     SHOTGUN = 2;
-    SNIPER = 3;
-    LMG = 4;
-    HEAVY = 5;
+    RIFLE = 3;
+    SNIPER_RIFLE = 4;
+    MACHINE_GUN = 5;
+    MELEE = 6;
 }
 
 enum WeaponName {

@@ -24,31 +24,34 @@ const (
 type WeaponType int32
 
 const (
-	WeaponType_RIFLE   WeaponType = 0
-	WeaponType_SMG     WeaponType = 1
-	WeaponType_SHOTGUN WeaponType = 2
-	WeaponType_SNIPER  WeaponType = 3
-	WeaponType_LMG     WeaponType = 4
-	WeaponType_HEAVY   WeaponType = 5
+	WeaponType_SIDEARM      WeaponType = 0
+	WeaponType_SMG          WeaponType = 1
+	WeaponType_SHOTGUN      WeaponType = 2
+	WeaponType_RIFLE        WeaponType = 3
+	WeaponType_SNIPER_RIFLE WeaponType = 4
+	WeaponType_MACHINE_GUN  WeaponType = 5
+	WeaponType_MELEE        WeaponType = 6
 )
 
 // Enum value maps for WeaponType.
 var (
 	WeaponType_name = map[int32]string{
-		0: "RIFLE",
+		0: "SIDEARM",
 		1: "SMG",
 		2: "SHOTGUN",
-		3: "SNIPER",
-		4: "LMG",
-		5: "HEAVY",
+		3: "RIFLE",
+		4: "SNIPER_RIFLE",
+		5: "MACHINE_GUN",
+		6: "MELEE",
 	}
 	WeaponType_value = map[string]int32{
-		"RIFLE":   0,
-		"SMG":     1,
-		"SHOTGUN": 2,
-		"SNIPER":  3,
-		"LMG":     4,
-		"HEAVY":   5,
+		"SIDEARM":      0,
+		"SMG":          1,
+		"SHOTGUN":      2,
+		"RIFLE":        3,
+		"SNIPER_RIFLE": 4,
+		"MACHINE_GUN":  5,
+		"MELEE":        6,
 	}
 )
 
@@ -219,7 +222,7 @@ func (x *Weapon) GetType() WeaponType {
 	if x != nil {
 		return x.Type
 	}
-	return WeaponType_RIFLE
+	return WeaponType_SIDEARM
 }
 
 func (x *Weapon) GetName() WeaponName {
@@ -244,16 +247,16 @@ const file_weapon_proto_rawDesc = "" +
 	"\x06Weapon\x12\x1f\n" +
 	"\x04type\x18\x01 \x01(\x0e2\v.WeaponTypeR\x04type\x12\x1f\n" +
 	"\x04name\x18\x02 \x01(\x0e2\v.WeaponNameR\x04name\x12\x12\n" +
-	"\x04cost\x18\x03 \x01(\rR\x04cost*M\n" +
+	"\x04cost\x18\x03 \x01(\rR\x04cost*h\n" +
 	"\n" +
-	"WeaponType\x12\t\n" +
-	"\x05RIFLE\x10\x00\x12\a\n" +
+	"WeaponType\x12\v\n" +
+	"\aSIDEARM\x10\x00\x12\a\n" +
 	"\x03SMG\x10\x01\x12\v\n" +
-	"\aSHOTGUN\x10\x02\x12\n" +
-	"\n" +
-	"\x06SNIPER\x10\x03\x12\a\n" +
-	"\x03LMG\x10\x04\x12\t\n" +
-	"\x05HEAVY\x10\x05*\xf3\x01\n" +
+	"\aSHOTGUN\x10\x02\x12\t\n" +
+	"\x05RIFLE\x10\x03\x12\x10\n" +
+	"\fSNIPER_RIFLE\x10\x04\x12\x0f\n" +
+	"\vMACHINE_GUN\x10\x05\x12\t\n" +
+	"\x05MELEE\x10\x06*\xf3\x01\n" +
 	"\n" +
 	"WeaponName\x12\t\n" +
 	"\x05KNIFE\x10\x00\x12\v\n" +
